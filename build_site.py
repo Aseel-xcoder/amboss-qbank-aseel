@@ -3,8 +3,11 @@
 
 The landing document keeps metadata and a compact QID index. Each test's complete
 question payload is emitted as a separate JSON asset and fetched only when that
-test (or a custom practice selection) is opened. The original, unchanged HTML is
-also published as an optional offline download.
+test (or a custom practice selection) is opened. The standalone HTML is also
+published as an optional offline download, rebranded as described below.
+Rebranding (Aseel): the source .gz is left unchanged; at build time the display
+name 𝓢𝓱𝓪𝓲𝓯 is replaced with 𝓐𝓼𝓮𝓮𝓵 everywhere (header, credits, explanations),
+so the published site shows Aseel. Links to t.me/shaifios are left unchanged.
 """
 from __future__ import annotations
 
@@ -62,6 +65,12 @@ def main() -> None:
     print("Reading the compressed source and extracting test records…", flush=True)
     with gzip.open(SOURCE, "rt", encoding="utf-8") as f:
         source = f.read()
+    # Rebrand at build time: Shaif -> Aseel (same Mathematical Bold Script style).
+    rebrand_count = source.count("𝓢𝓱𝓪𝓲𝓯")
+    print(f"Rebranding {rebrand_count} display-name occurrences Shaif -> Aseel…", flush=True)
+    if rebrand_count == 0:
+        raise RuntimeError("Expected Shaif display name in source; found 0")
+    source = source.replace("𝓢𝓱𝓪𝓲𝓯", "𝓐𝓼𝓮𝓮𝓵")
     if source.count(ARRAY_MARKER) != 1:
         raise RuntimeError("Could not uniquely locate the source TESTS_LIST array")
 
@@ -298,9 +307,8 @@ async function updateBuilder() {
     shutil.copyfile(ROUTES, OUT / "manus-routes.json")
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
 
-    print("Writing the byte-identical standalone HTML download…", flush=True)
-    with gzip.open(SOURCE, "rb") as src, (OUT / "downloads" / "AMBOSSQBank.html").open("wb") as dst:
-        shutil.copyfileobj(src, dst, length=1024 * 1024)
+    print("Writing the rebranded standalone HTML download…", flush=True)
+    (OUT / "downloads" / "AMBOSSQBank.html").write_text(source, encoding="utf-8")
 
     total_bytes = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
     index_bytes = (OUT / "index.html").stat().st_size
