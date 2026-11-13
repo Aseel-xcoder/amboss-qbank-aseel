@@ -301,10 +301,8 @@ async function updateBuilder() {
   const pool = collectPool(cfg);'''
     page = replace_once(page, old_update, new_update, "async custom builder update")
 
-    old_dashboard = '''    (bmN ? '<button class="qbtn" data-go="bookmarks">★ Bookmarks (' + bmN + ")</button>" : "");'''
-    new_dashboard = '''    (bmN ? '<button class="qbtn" data-go="bookmarks">★ Bookmarks (' + bmN + ")</button>" : "") +
-    '<a class="qbtn ghost" href="https://t.me/Med_tips_and_tricks">✈️ Download Offline</a>';'''
-    page = replace_once(page, old_dashboard, new_dashboard, "offline download link")
+    # Download Offline button removed 2026-11-13 at the user's request:
+    # it must not appear in the main ASEELOSE app's WebView.
 
     # Protect against accidentally publishing a second large data array or API route.
     if "fetch(\"/api/tests/" in page:
