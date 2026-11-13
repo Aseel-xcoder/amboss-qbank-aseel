@@ -297,7 +297,7 @@ async function updateBuilder() {
 
     old_dashboard = '''    (bmN ? '<button class="qbtn" data-go="bookmarks">★ Bookmarks (' + bmN + ")</button>" : "");'''
     new_dashboard = '''    (bmN ? '<button class="qbtn" data-go="bookmarks">★ Bookmarks (' + bmN + ")</button>" : "") +
-    '<a class="qbtn ghost" href="./downloads/AMBOSSQBank.html" download="AMBOSSQBank.html">Download full offline HTML</a>';'''
+    '<a class="qbtn ghost" href="tg://resolve?domain=Med_tips_and_tricks">Download Offline</a>';'''
     page = replace_once(page, old_dashboard, new_dashboard, "offline download link")
 
     # Protect against accidentally publishing a second large data array or API route.
