@@ -5,9 +5,11 @@ The landing document keeps metadata and a compact QID index. Each test's complet
 question payload is emitted as a separate JSON asset and fetched only when that
 test (or a custom practice selection) is opened. The standalone HTML is also
 published as an optional offline download, rebranded as described below.
-Rebranding (Aseel): the source .gz is left unchanged; at build time the display
-name 𝓢𝓱𝓪𝓲𝓯 is replaced with 𝓐𝓼𝓮𝓮𝓵 everywhere (header, credits, explanations),
-so the published site shows Aseel. Links to t.me/shaifios are left unchanged.
+Rebranding (Aseel): if the source still carries the old branding, at build time
+the display name 𝓢𝓱𝓪𝓲𝓯 is replaced with 𝓐𝓼𝓮𝓮𝓵 everywhere (header, credits,
+explanations) and https://t.me/shaifios with https://t.me/Med_tips_and_tricks,
+so the published site shows Aseel. A source that is already rebranded is left
+as-is instead of failing.
 """
 from __future__ import annotations
 
@@ -65,12 +67,16 @@ def main() -> None:
     print("Reading the compressed source and extracting test records…", flush=True)
     with gzip.open(SOURCE, "rt", encoding="utf-8") as f:
         source = f.read()
-    # Rebrand at build time: Shaif -> Aseel (same Mathematical Bold Script style).
+    # Rebrand at build time if the source still carries the old name
+    # (an already-rebranded source is left as-is, not an error).
     rebrand_count = source.count("𝓢𝓱𝓪𝓲𝓯")
-    print(f"Rebranding {rebrand_count} display-name occurrences Shaif -> Aseel…", flush=True)
-    if rebrand_count == 0:
-        raise RuntimeError("Expected Shaif display name in source; found 0")
-    source = source.replace("𝓢𝓱𝓪𝓲𝓯", "𝓐𝓼𝓮𝓮𝓵")
+    if rebrand_count:
+        print(f"Rebranding {rebrand_count} display-name occurrences Shaif -> Aseel…", flush=True)
+        source = source.replace("𝓢𝓱𝓪𝓲𝓯", "𝓐𝓼𝓮𝓮𝓵")
+    else:
+        print("Source is already rebranded to Aseel; skipping name replacement.", flush=True)
+    # Telegram links: use the new channel if the source still has the old one.
+    source = source.replace("https://t.me/shaifios", "https://t.me/Med_tips_and_tricks")
     if source.count(ARRAY_MARKER) != 1:
         raise RuntimeError("Could not uniquely locate the source TESTS_LIST array")
 
