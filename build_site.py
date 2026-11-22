@@ -5,11 +5,11 @@ The landing document keeps metadata and a compact QID index. Each test's complet
 question payload is emitted as a separate JSON asset and fetched only when that
 test (or a custom practice selection) is opened. The standalone HTML is also
 published as an optional offline download, rebranded as described below.
-Rebranding (Aseel): if the source still carries the old branding, at build time
-the display name 𝓢𝓱𝓪𝓲𝓯 is replaced with 𝓐𝓼𝓮𝓮𝓵 everywhere (header, credits,
-explanations) and https://t.me/shaifios with https://t.me/Med_tips_and_tricks,
-so the published site shows Aseel. A source that is already rebranded is left
-as-is instead of failing.
+Rebranding (Dr. Reason): if the source still carries an old branding, at build
+time the display name 𝓢𝓱𝓪𝓲𝓯 or 𝓐𝓼𝓮𝓮𝓵 is replaced with Dr. Reason everywhere
+(header, credits, explanations) and https://t.me/shaifios with
+https://t.me/Med_tips_and_tricks, so the published site shows Dr. Reason.
+A source that is already rebranded is left as-is instead of failing.
 """
 from __future__ import annotations
 
@@ -67,14 +67,15 @@ def main() -> None:
     print("Reading the compressed source and extracting test records…", flush=True)
     with gzip.open(SOURCE, "rt", encoding="utf-8") as f:
         source = f.read()
-    # Rebrand at build time if the source still carries the old name
+    # Rebrand at build time if the source still carries an old name
     # (an already-rebranded source is left as-is, not an error).
-    rebrand_count = source.count("𝓢𝓱𝓪𝓲𝓯")
-    if rebrand_count:
-        print(f"Rebranding {rebrand_count} display-name occurrences Shaif -> Aseel…", flush=True)
-        source = source.replace("𝓢𝓱𝓪𝓲𝓯", "𝓐𝓼𝓮𝓮𝓵")
-    else:
-        print("Source is already rebranded to Aseel; skipping name replacement.", flush=True)
+    for old_name in ("𝓢𝓱𝓪𝓲𝓯", "𝓐𝓼𝓮𝓮𝓵"):
+        rebrand_count = source.count(old_name)
+        if rebrand_count:
+            print(f"Rebranding {rebrand_count} display-name occurrences -> Dr. Reason…", flush=True)
+            source = source.replace(old_name, "Dr. Reason")
+    if "Dr. Reason" in source:
+        print("Source carries the Dr. Reason branding.", flush=True)
     # Telegram links: use the new channel if the source still has the old one.
     source = source.replace("https://t.me/shaifios", "https://t.me/Med_tips_and_tricks")
     if source.count(ARRAY_MARKER) != 1:
