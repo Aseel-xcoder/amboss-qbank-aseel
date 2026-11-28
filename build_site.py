@@ -13,6 +13,7 @@ A source that is already rebranded is left as-is instead of failing.
 """
 from __future__ import annotations
 
+import base64
 import gzip
 import html
 import json
@@ -23,6 +24,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "AMBOSSQBank.html.gz"
 ROUTES = ROOT / "manus-routes.json"
+PREVIEW_B64 = ROOT / "preview-dr-reason.png.b64"
+PREVIEW_NAME = "preview-dr-reason.png"
+SITE_URL = "https://aseel-xcoder.github.io/amboss-qbank-aseel"
 OUT = ROOT / "_site"
 EXPECTED_TESTS = 1266
 EXPECTED_QUESTIONS = 21247
@@ -143,6 +147,51 @@ def main() -> None:
     metadata_json = json.dumps(metadata, ensure_ascii=False, separators=(",", ":"))
     metadata_json = metadata_json.replace("</", "<\\/").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
     page = source[:array_start] + metadata_json + source[array_end:]
+
+    # Link preview (2026-11-28): the source still points its Open Graph tags at
+    # a stale Manus checkpoint screenshot showing the old "Shaif" branding, and
+    # og:url at the old manus.space host. Point them at the Pages site and the
+    # new Dr. Reason preview image (a new filename, so WhatsApp fetches a
+    # fresh preview instead of its cached one). Fail loudly if a tag is not
+    # found exactly as expected — never silently ship the old preview.
+    page = replace_once(
+        page,
+        '<meta property="og:url" content="https://qbankamboss-hcxjknpx.manus.space/">',
+        f'<meta property="og:url" content="{SITE_URL}/">',
+        "og:url tag",
+    )
+    # Same stale host in the canonical link — fix it too so crawlers and
+    # preview fetchers do not get sent back to the old Manus host.
+    page = replace_once(
+        page,
+        '<link rel="canonical" href="https://qbankamboss-hcxjknpx.manus.space/" />',
+        f'<link rel="canonical" href="{SITE_URL}/" />',
+        "canonical link tag",
+    )
+    page = replace_once(
+        page,
+        '<meta property="og:image" content="https://qbankamboss-hcxjknpx.manus.space/__manus/checkpoint-screenshot.png?v=fa1c01f2&amp;badge=1">',
+        f'<meta property="og:image" content="{SITE_URL}/{PREVIEW_NAME}">',
+        "og:image tag",
+    )
+    page = replace_once(
+        page,
+        '<meta name="twitter:image" content="https://qbankamboss-hcxjknpx.manus.space/__manus/checkpoint-screenshot.png?v=fa1c01f2&amp;badge=1">',
+        f'<meta name="twitter:image" content="{SITE_URL}/{PREVIEW_NAME}">',
+        "twitter:image tag",
+    )
+    page = replace_once(
+        page,
+        '<meta property="og:title" content="AMBOSS QBank">',
+        '<meta property="og:title" content="AMBOSS QBank">\n<meta property="og:description" content="1,266 tests · 21,247 questions — Done by Dr. Reason">',
+        "og:title tag (og:description insert)",
+    )
+    page = replace_once(
+        page,
+        '<meta name="twitter:title" content="AMBOSS QBank">',
+        '<meta name="twitter:title" content="AMBOSS QBank">\n<meta name="twitter:description" content="1,266 tests · 21,247 questions — Done by Dr. Reason">',
+        "twitter:title tag (twitter:description insert)",
+    )
 
     # Each full payload is hosted as a static asset and cached after first use.
     helper = r'''const TEST_DATA_PROMISES = new Map();
@@ -310,6 +359,14 @@ async function updateBuilder() {
         raise RuntimeError("A server-only question API reference remains in the built HTML")
     (OUT / "index.html").write_text(page, encoding="utf-8")
     shutil.copyfile(ROUTES, OUT / "manus-routes.json")
+    # Link-preview image (2026-11-28): the PNG travels in the repo as base64
+    # text (preview-dr-reason.png.b64) because the GitHub connector cannot
+    # push binary files; decode it into the published site here.
+    if PREVIEW_B64.is_file():
+        (OUT / PREVIEW_NAME).write_bytes(base64.b64decode(PREVIEW_B64.read_text(encoding="ascii")))
+        print(f"Decoded link-preview image: {PREVIEW_NAME}", flush=True)
+    else:
+        print(f"WARNING: {PREVIEW_B64.name} not found — site will ship without a preview image", flush=True)
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
 
     print("Writing the rebranded standalone HTML download…", flush=True)
